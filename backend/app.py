@@ -6,14 +6,14 @@ from flask_cors import CORS  # ✅ Importation de CORS
 app = Flask(__name__)
 CORS(app)  # ✅ Active CORS pour toutes les routes
 
-DATABASE_URL = "postgresql://admin:secret@db:5432/appdb"
+DATABASE_URL = "postgresql://admin:secret@db:5432/faso"
 
 @app.route("/stats", methods=["GET"])
 def get_stats():
     engine = create_engine(DATABASE_URL)
     
     try:
-        df = pd.read_sql("SELECT * FROM donnees_csv LIMIT 5", engine)
+        df = pd.read_sql("SELECT * FROM utilisateurs", engine)
         stats = {
             "total_lignes": len(df),
             "extrait": df.to_dict(orient="records")

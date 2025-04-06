@@ -21,7 +21,7 @@ services:
       - DB_PORT=5433
       - DB_USER=admin
       - DB_PASSWORD=secret
-      - DB_NAME=appdb
+      - DB_NAME=faso
     depends_on:
       - db
     command: ["gunicorn", "-b", "0.0.0.0:5001", "app:app"]
@@ -36,7 +36,7 @@ services:
       - DB_PORT=5433
       - DB_USER=admin
       - DB_PASSWORD=secret
-      - DB_NAME=appdb
+      - DB_NAME=faso
     depends_on:
       - db
     command: ["python", "data_processor.py"]
@@ -48,7 +48,7 @@ services:
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=secret
-      - POSTGRES_DB=appdb
+      - POSTGRES_DB=faso
     volumes:
       - ./db_data:/var/lib/postgresql/data
 

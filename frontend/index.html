@@ -3,79 +3,1027 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard</title>
+    <title>Dashboard Analytique</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
     <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4bb543;
+            --warning-color: #ffcc00;
+            --danger-color: #f44336;
+        }
+        
         body {
-            background-color: #f8f9fa;
+            background-color: #f5f7fb;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
         .card {
+            border: none;
             border-radius: 12px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 24px;
+            overflow: hidden;
         }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            padding: 16px 20px;
+        }
+        
         .loading {
-            font-size: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
             color: #6c757d;
+        }
+        
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            margin-right: 10px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .stat-card .value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .stat-card .label {
+            font-size: 1rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table thead th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+        }
+        
+        .table tbody tr {
+            transition: background-color 0.2s;
+        }
+        
+        .table tbody tr:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .badge {
+            padding: 6px 10px;
+            font-weight: 500;
+            border-radius: 8px;
+        }
+        
+        .last-update {
+            font-size: 0.85rem;
+            color: #6c757d;
+            text-align: right;
+            margin-top: 10px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            padding: 16px;
+        }
+        
+        .filter-section {
+            background-color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .data-actions {
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .stat-card .value {
+                font-size: 2rem;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="container mt-5">
-    <h1 class="text-center mb-4">📊 Résultats du Traitement</h1>
-
-    <!-- Affichage du total -->
-    <div id="stats-card" class="card text-center p-4 mb-4" style="display: none;">
-        <h4>Total de lignes: <span id="total-lignes" class="fw-bold"></span></h4>
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="#">
+            <i class="fas fa-chart-line me-2"></i>Analytics Dashboard
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#dashboard"><i class="fas fa-home me-1"></i> Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#settings"><i class="fas fa-cog me-1"></i> Paramètres</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#help"><i class="fas fa-question-circle me-1"></i> Aide</a>
+                </li>
+            </ul>
+        </div>
     </div>
+</nav>
 
-    <!-- Tableau des données -->
-    <div class="card p-4">
-        <h5 class="mb-3">📄 Données extraites :</h5>
-        <div id="loading" class="loading">Chargement en cours...</div>
-        <table class="table table-bordered table-hover" id="data-table" style="display: none;">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Valeur 1</th>
-                    <th>Valeur 2</th>
-                </tr>
-            </thead>
-            <tbody id="table-body"></tbody>
-        </table>
+<div class="container mb-5" id="dashboard">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0"><i class="fas fa-tachometer-alt me-2"></i>Tableau de bord analytique</h1>
+        <div>
+            <button id="refresh-btn" class="btn btn-primary">
+                <i class="fas fa-sync-alt me-1"></i> Rafraîchir
+            </button>
+        </div>
     </div>
-
-    <!-- Zone d'erreur -->
-    <div id="error-message" class="alert alert-danger mt-3" style="display: none;"></div>
+    
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card stat-card">
+                <div class="value" id="total-lignes">0</div>
+                <div class="label">Total d'entrées</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card" style="border-left-color: var(--success-color);">
+                <div class="value" id="avg-note">0</div>
+                <div class="label">Note moyenne</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stat-card" style="border-left-color: var(--accent-color);">
+                <div class="value" id="avg-age">0</div>
+                <div class="label">Âge moyen</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="filter-section">
+        <div class="row">
+            <div class="col-md-3">
+                <label for="city-filter" class="form-label">Ville</label>
+                <select class="form-select" id="city-filter">
+                    <option value="">Toutes les villes</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="profession-filter" class="form-label">Profession</label>
+                <select class="form-select" id="profession-filter">
+                    <option value="">Toutes les professions</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="age-range" class="form-label">Tranche d'âge</label>
+                <select class="form-select" id="age-range">
+                    <option value="">Tous les âges</option>
+                    <option value="18-25">18-25 ans</option>
+                    <option value="26-35">26-35 ans</option>
+                    <option value="36-45">36-45 ans</option>
+                    <option value="46+">46+ ans</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="active-filter" class="form-label">Statut</label>
+                <select class="form-select" id="active-filter">
+                    <option value="">Tous les statuts</option>
+                    <option value="true">Actif</option>
+                    <option value="false">Inactif</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-table me-2"></i>Données détaillées</span>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-1"></i> Exporter
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="export-csv"><i class="fas fa-file-csv me-1"></i> CSV</a></li>
+                            <li><a class="dropdown-item" href="#" id="export-json"><i class="fas fa-file-code me-1"></i> JSON</a></li>
+                            <li><a class="dropdown-item" href="#" id="export-pdf"><i class="fas fa-file-pdf me-1"></i> PDF</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="loading">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span>Chargement des données...</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="data-table" style="display: none;">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom</th>
+                                    <th>Âge</th>
+                                    <th>Ville</th>
+                                    <th>Note</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <div class="form-text" id="table-info">Aucune donnée affichée</div>
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0" id="pagination">
+                                <!-- La pagination sera générée ici -->
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie me-2"></i>Répartition par ville
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="pie-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user-tag me-2"></i>Répartition par profession
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="doughnut-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line me-2"></i>Évolution des notes
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="line-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar me-2"></i>Distribution des âges
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="bar-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="last-update" id="last-update">
+        Dernière mise à jour: <span id="update-time">Jamais</span>
+    </div>
 </div>
 
+<div id="settings" class="container mb-5" style="display: none;">
+    <h2 class="mb-4"><i class="fas fa-cog me-2"></i>Paramètres</h2>
+    <div class="card">
+        <div class="card-body">
+            <p>Paramètres de l'application en cours de développement...</p>
+        </div>
+    </div>
+</div>
+
+<div id="help" class="container mb-5" style="display: none;">
+    <h2 class="mb-4"><i class="fas fa-question-circle me-2"></i>Aide</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5>Comment utiliser ce tableau de bord</h5>
+            <ul>
+                <li>Utilisez les filtres en haut pour affiner les données affichées</li>
+                <li>Cliquez sur le bouton "Rafraîchir" pour mettre à jour les données</li>
+                <li>Utilisez la pagination pour naviguer entre les pages de résultats</li>
+                <li>Cliquez sur l'icône "œil" pour voir les détails d'un utilisateur</li>
+                <li>Exportez les données dans différents formats via le menu déroulant</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de l'utilisateur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="user-details">
+                <!-- Les détails seront chargés ici -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
 <script>
-    fetch("http://localhost:5001/stats")
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("total-lignes").textContent = data.total_lignes;
-            document.getElementById("stats-card").style.display = "block";
-
-            let tableBody = document.getElementById("table-body");
-            data.extrait.forEach(row => {
-                tableBody.innerHTML += `
-                    <tr>
-                        <td>${row.id}</td>
-                        <td>${row.valeur1}</td>
-                        <td>${row.valeur2}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById("data-table").style.display = "table";
-        })
-        .catch(error => {
-            document.getElementById("loading").style.display = "none";
-            document.getElementById("error-message").innerText = "❌ Erreur lors du chargement des statistiques.";
-            document.getElementById("error-message").style.display = "block";
-            console.error("Erreur API:", error);
+    // Variables globales
+    let allData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    let charts = {};
+    
+    // Fonction principale pour charger les données
+    async function fetchData() {
+        try {
+            showLoading();
+            
+            const response = await fetch("http://localhost:5001/stats");
+            if (!response.ok) throw new Error("Erreur réseau");
+            
+            const data = await response.json();
+            allData = data.extrait;
+            
+            updateStats(data);
+            updateFilters(allData);
+            applyFilters();
+            updateLastUpdateTime();
+            
+        } catch (error) {
+            showError("Erreur lors du chargement des données: " + error.message);
+        } finally {
+            hideLoading();
+        }
+    }
+    
+    // Afficher le chargement
+    function showLoading() {
+        document.getElementById("loading").style.display = "flex";
+        document.getElementById("data-table").style.display = "none";
+    }
+    
+    // Cacher le chargement
+    function hideLoading() {
+        document.getElementById("loading").style.display = "none";
+    }
+    
+    // Afficher une erreur
+    function showError(message) {
+        const errorElement = document.createElement("div");
+        errorElement.className = "alert alert-danger alert-dismissible fade show";
+        errorElement.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const container = document.querySelector(".container");
+        container.insertBefore(errorElement, container.firstChild);
+        
+        setTimeout(() => {
+            errorElement.classList.remove("show");
+            setTimeout(() => errorElement.remove(), 150);
+        }, 5000);
+    }
+    
+    // Mettre à jour les statistiques
+    function updateStats(data) {
+        document.getElementById("total-lignes").textContent = data.total_lignes;
+        
+        // Calculer la note moyenne
+        const avgNote = allData.reduce((sum, item) => sum + parseFloat(item.note_examen), 0) / allData.length;
+        document.getElementById("avg-note").textContent = avgNote.toFixed(1);
+        
+        // Calculer l'âge moyen
+        const avgAge = allData.reduce((sum, item) => sum + parseInt(item.age), 0) / allData.length;
+        document.getElementById("avg-age").textContent = Math.round(avgAge);
+    }
+    
+    // Mettre à jour les filtres
+    function updateFilters(data) {
+        const cities = [...new Set(data.map(item => item.ville))].sort();
+        const professions = [...new Set(data.map(item => item.profession))].sort();
+        
+        const cityFilter = document.getElementById("city-filter");
+        cityFilter.innerHTML = '<option value="">Toutes les villes</option>';
+        cities.forEach(city => {
+            cityFilter.innerHTML += `<option value="${city}">${city}</option>`;
         });
+        
+        const professionFilter = document.getElementById("profession-filter");
+        professionFilter.innerHTML = '<option value="">Toutes les professions</option>';
+        professions.forEach(profession => {
+            professionFilter.innerHTML += `<option value="${profession}">${profession}</option>`;
+        });
+    }
+    
+    // Appliquer les filtres
+    function applyFilters() {
+        const cityFilter = document.getElementById("city-filter").value;
+        const professionFilter = document.getElementById("profession-filter").value;
+        const ageRange = document.getElementById("age-range").value;
+        const activeFilter = document.getElementById("active-filter").value;
+        
+        filteredData = allData.filter(item => {
+            // Filtre par ville
+            if (cityFilter && item.ville !== cityFilter) return false;
+            
+            // Filtre par profession
+            if (professionFilter && item.profession !== professionFilter) return false;
+            
+            // Filtre par tranche d'âge
+            if (ageRange) {
+                const age = parseInt(item.age);
+                if (ageRange === "18-25" && (age < 18 || age > 25)) return false;
+                if (ageRange === "26-35" && (age < 26 || age > 35)) return false;
+                if (ageRange === "36-45" && (age < 36 || age > 45)) return false;
+                if (ageRange === "46+" && age < 46) return false;
+            }
+            
+            // Filtre par statut actif
+            if (activeFilter !== "" && item.est_actif.toString() !== activeFilter) return false;
+            
+            return true;
+        });
+        
+        currentPage = 1; // Réinitialiser à la première page
+        renderTable();
+        updateCharts();
+    }
+    
+    // Rendre le tableau avec pagination
+    function renderTable() {
+        const tableBody = document.getElementById("table-body");
+        tableBody.innerHTML = "";
+        
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(startIndex + itemsPerPage, filteredData.length);
+        const pageData = filteredData.slice(startIndex, endIndex);
+        
+        pageData.forEach(item => {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td>${item.nom}</td>
+                <td>${item.age}</td>
+                <td>${item.ville}</td>
+                <td>
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar" 
+                             role="progressbar" 
+                             style="width: ${item.note_examen * 10}%;" 
+                             aria-valuenow="${item.note_examen}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="10">
+                            ${item.note_examen}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge ${item.est_actif ? 'bg-success' : 'bg-secondary'}">
+                        ${item.est_actif ? 'Actif' : 'Inactif'}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary view-details" data-id="${item.id}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        // Mettre à jour les informations de pagination
+        document.getElementById("table-info").textContent = 
+            `Affichage de ${startIndex + 1} à ${endIndex} sur ${filteredData.length} entrées`;
+        
+        // Mettre à jour la pagination
+        updatePagination();
+        
+        // Afficher le tableau
+        document.getElementById("data-table").style.display = "table";
+        
+        // Ajouter les écouteurs d'événements pour les boutons de détails
+        document.querySelectorAll(".view-details").forEach(button => {
+            button.addEventListener("click", function() {
+                const userId = this.getAttribute("data-id");
+                showUserDetails(userId);
+            });
+        });
+    }
+    
+    // Mettre à jour la pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = "";
+        
+        // Fonction pour changer de page
+        const goToPage = (page) => {
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+            currentPage = page;
+            renderTable();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Bouton Précédent
+        const prevLi = document.createElement("li");
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" href="#" ${currentPage === 1 ? 'tabindex="-1" aria-disabled="true"' : ''}>Précédent</a>`;
+        if (currentPage > 1) {
+            prevLi.addEventListener("click", (e) => {
+                e.preventDefault();
+                goToPage(currentPage - 1);
+            });
+        }
+        pagination.appendChild(prevLi);
+        
+        // Pages
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        // Ajuster si nous sommes près du début ou de la fin
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        // Première page + ellipsis si nécessaire
+        if (startPage > 1) {
+            const firstLi = document.createElement("li");
+            firstLi.className = "page-item";
+            firstLi.innerHTML = `<a class="page-link" href="#">1</a>`;
+            firstLi.addEventListener("click", (e) => {
+                e.preventDefault();
+                goToPage(1);
+            });
+            pagination.appendChild(firstLi);
+            
+            if (startPage > 2) {
+                const ellipsisLi = document.createElement("li");
+                ellipsisLi.className = "page-item disabled";
+                ellipsisLi.innerHTML = `<span class="page-link">...</span>`;
+                pagination.appendChild(ellipsisLi);
+            }
+        }
+        
+        // Pages visibles
+        for (let i = startPage; i <= endPage; i++) {
+            const pageLi = document.createElement("li");
+            pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            pageLi.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            pageLi.addEventListener("click", (e) => {
+                e.preventDefault();
+                goToPage(i);
+            });
+            pagination.appendChild(pageLi);
+        }
+        
+        // Dernière page + ellipsis si nécessaire
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                const ellipsisLi = document.createElement("li");
+                ellipsisLi.className = "page-item disabled";
+                ellipsisLi.innerHTML = `<span class="page-link">...</span>`;
+                pagination.appendChild(ellipsisLi);
+            }
+            
+            const lastLi = document.createElement("li");
+            lastLi.className = "page-item";
+            lastLi.innerHTML = `<a class="page-link" href="#">${totalPages}</a>`;
+            lastLi.addEventListener("click", (e) => {
+                e.preventDefault();
+                goToPage(totalPages);
+            });
+            pagination.appendChild(lastLi);
+        }
+        
+        // Bouton Suivant
+        const nextLi = document.createElement("li");
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" href="#" ${currentPage === totalPages ? 'tabindex="-1" aria-disabled="true"' : ''}>Suivant</a>`;
+        if (currentPage < totalPages) {
+            nextLi.addEventListener("click", (e) => {
+                e.preventDefault();
+                goToPage(currentPage + 1);
+            });
+        }
+        pagination.appendChild(nextLi);
+    }
+    
+    // Afficher les détails d'un utilisateur
+    function showUserDetails(userId) {
+        const user = allData.find(item => item.id == userId);
+        if (!user) return;
+        
+        const modalBody = document.getElementById("user-details");
+        modalBody.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <h6>Nom complet</h6>
+                        <p>${user.nom}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Âge</h6>
+                        <p>${user.age} ans</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Ville</h6>
+                        <p>${user.ville}</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <h6>Profession</h6>
+                        <p>${user.profession}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Note d'examen</h6>
+                        <p>${user.note_examen}/100</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Nombre d'enfants</h6>
+                        <p>${user.nombre_enfants}</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <h6>Date d'inscription</h6>
+                        <p>${user.date_inscription}</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Statut</h6>
+                        <p><span class="badge ${user.est_actif ? 'bg-success' : 'bg-secondary'}">
+                            ${user.est_actif ? 'Actif' : 'Inactif'}
+                        </span></p>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Dernière connexion</h6>
+                        <p>${user.derniere_connexion}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+        modal.show();
+    }
+    
+    // Mettre à jour les graphiques
+    function updateCharts() {
+        // Données pour les graphiques
+        const labels = filteredData.map(item => item.nom);
+        const notes = filteredData.map(item => parseFloat(item.note_examen));
+        const ages = filteredData.map(item => parseInt(item.age));
+        
+        // Group by city for pie chart
+        const cities = {};
+        filteredData.forEach(item => {
+            cities[item.ville] = (cities[item.ville] || 0) + 1;
+        });
+        
+        // Group by profession for doughnut chart
+        const professions = {};
+        filteredData.forEach(item => {
+            professions[item.profession] = (professions[item.profession] || 0) + 1;
+        });
+        
+        // Line chart - Notes
+        if (charts.lineChart) charts.lineChart.destroy();
+        const lineCtx = document.getElementById('line-chart').getContext('2d');
+        charts.lineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Note d\'examen',
+                    data: notes,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Note: ${context.raw}/10`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Bar chart - Âges
+        if (charts.barChart) charts.barChart.destroy();
+        const barCtx = document.getElementById('bar-chart').getContext('2d');
+        charts.barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Âge',
+                    data: ages,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Pie chart - Villes
+        if (charts.pieChart) charts.pieChart.destroy();
+        const pieCtx = document.getElementById('pie-chart').getContext('2d');
+        charts.pieChart = new Chart(pieCtx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(cities),
+                datasets: [{
+                    data: Object.values(cities),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Doughnut chart - Professions
+        if (charts.doughnutChart) charts.doughnutChart.destroy();
+        const doughnutCtx = document.getElementById('doughnut-chart').getContext('2d');
+        charts.doughnutChart = new Chart(doughnutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(professions),
+                datasets: [{
+                    data: Object.values(professions),
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.raw;
+                                const percentage = Math.round((value / total) * 100);
+                                return `${context.label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Mettre à jour l'heure de la dernière mise à jour
+    function updateLastUpdateTime() {
+        const now = new Date();
+        const options = { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        };
+        document.getElementById("update-time").textContent = 
+            now.toLocaleDateString('fr-FR', options);
+    }
+    
+    // Exporter en CSV
+    document.getElementById("export-csv").addEventListener("click", function(e) {
+        e.preventDefault();
+        let csv = "ID,Nom,Âge,Ville,Profession,Note Examen,Date Inscription,Nombre Enfants,Statut,Dernière Connexion\n";
+        
+        filteredData.forEach(item => {
+            csv += `"${item.id}","${item.nom}","${item.age}","${item.ville}","${item.profession}","${item.note_examen}","${item.date_inscription}","${item.nombre_enfants}","${item.est_actif ? 'Actif' : 'Inactif'}","${item.derniere_connexion}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `donnees_${new Date().toISOString().slice(0,10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+    
+    // Exporter en JSON
+    document.getElementById("export-json").addEventListener("click", function(e) {
+        e.preventDefault();
+        const json = JSON.stringify(filteredData, null, 2);
+        const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `donnees_${new Date().toISOString().slice(0,10)}.json`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+    
+    // Exporter en PDF (simplifié)
+    document.getElementById("export-pdf").addEventListener("click", function(e) {
+        e.preventDefault();
+        alert("L'export PDF nécessiterait une bibliothèque comme jsPDF. Cette fonctionnalité est en cours de développement.");
+    });
+    
+    // Navigation entre les sections
+    function setupNavigation() {
+        // Cache toutes les sections et montre celle correspondant au hash
+        function showSection() {
+            document.querySelectorAll('.container[id]').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            const hash = window.location.hash || '#dashboard';
+            const section = document.querySelector(hash);
+            if (section) section.style.display = 'block';
+            
+            // Met à jour l'état actif dans la navbar
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === hash) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
+        // Écoute les changements de hash
+        window.addEventListener('hashchange', showSection);
+        
+        // Initialise l'affichage
+        showSection();
+    }
+    
+    // Écouteurs d'événements
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchData();
+        setupNavigation();
+    });
+    
+    document.getElementById("refresh-btn").addEventListener("click", fetchData);
+    document.getElementById("city-filter").addEventListener("change", applyFilters);
+    document.getElementById("profession-filter").addEventListener("change", applyFilters);
+    document.getElementById("age-range").addEventListener("change", applyFilters);
+    document.getElementById("active-filter").addEventListener("change", applyFilters);
+    
+    // Rafraîchissement automatique toutes les 30 secondes
+    setInterval(fetchData, 30000);
 </script>
 
 </body>
